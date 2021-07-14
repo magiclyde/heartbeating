@@ -131,6 +131,16 @@ func hub() {
 	}
 }
 
+func ipLimitMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !php2go.InArray(c.ClientIP(), []string{"127.0.0.1", "::1"}) {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+		c.Next()
+	}
+}
+
 func main() {
 	flag.Parse()
 
@@ -147,13 +157,7 @@ func main() {
 
 	// profiler
 	if *mode == gin.DebugMode {
-		group := router.Group("/debug", func(c *gin.Context) {
-			if !php2go.InArray(c.ClientIP(), []string{"127.0.0.1", "::1"}) {
-				c.AbortWithStatus(http.StatusForbidden)
-				return
-			}
-			c.Next()
-		})
+		group := router.Group("/debug", ipLimitMiddleware())
 		pprof.RouteRegister(group, "pprof")
 	}
 
