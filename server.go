@@ -24,12 +24,13 @@ const (
 )
 
 var (
-	addr     = flag.String("addr", ":9999", "http service address")
-	mode     = flag.String("mode", gin.DebugMode, "debug mode")
-	jwtKey   = flag.String("jwtKey", "changeme", "jwt key")
-	logFile  = flag.String("logFile", "server.log", "log file")
-	sugar    = logger.NewLogger(zap.InfoLevel, *logFile).Sugar()
-	upgrader = websocket.Upgrader{
+	addr      = flag.String("addr", ":9999", "http service address")
+	mode      = flag.String("mode", gin.DebugMode, "debug mode")
+	jwtKey    = flag.String("jwtKey", "changeme", "jwt key")
+	logFile   = flag.String("logFile", "server.log", "log file")
+	zapLogger = logger.NewLogger(zap.InfoLevel, *logFile)
+	sugar     = zapLogger.Sugar()
+	upgrader  = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 	}
@@ -146,9 +147,8 @@ func main() {
 
 	gin.SetMode(*mode)
 	router := gin.New()
-	router.Use(gin.LoggerWithConfig(gin.LoggerConfig{
-		SkipPaths: []string{"/favicon.ico"},
-	}))
+
+	router.Use(middleware.GinZapLogger(zapLogger, []string{"/favicon.ico"}))
 	router.Use(gin.Recovery())
 
 	router.GET("/", func(c *gin.Context) {
